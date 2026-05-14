@@ -4,8 +4,8 @@
 // Troque BASE_URL e IA_URL pela URL real do deploy antes de colocar em produção.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
-const IA_URL   = import.meta.env.VITE_IA_URL  ?? 'http://localhost:8000'
+const BASE_URL = 'http://localhost:8080/api'
+const IA_URL   = 'https://turma-do-bem-ia.onrender.com'
 
 // ─── Utilitário de fetch ──────────────────────────────────────────────────────
 async function request<T>(
