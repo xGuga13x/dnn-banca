@@ -118,7 +118,10 @@ export default function Login() {
       setErro('Erro inesperado. Tente novamente.')
     } finally {
       setLoading(false)
-    }turn (
+    }
+  }
+
+  return (
     <div className="min-h-screen flex" style={{ backgroundColor: '#f4f9ec' }}>
 
       {/* Painel esquerdo — visual */}
