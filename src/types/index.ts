@@ -59,14 +59,19 @@ export interface Consulta {
 
 // ─── Prontuário ──────────────────────────────────────────────────────────────
 export interface Prontuario {
+  id: number
   idProntuario: number
   idConsulta: number
+  nomePaciente?: string
+  nomeDentista?: string
   descricao: string
+  observacoes?: string
   dtRegistro: string
 }
 
 // ─── Campanha ────────────────────────────────────────────────────────────────
 export interface Campanha {
+  id: number
   idCampanha: number
   nome: string
   descricao?: string
@@ -79,6 +84,7 @@ export interface Campanha {
 
 // ─── Doação ──────────────────────────────────────────────────────────────────
 export interface Doacao {
+  id: number
   idDoacao: number
   idDoador?: number
   nomeDoador?: string
@@ -87,15 +93,19 @@ export interface Doacao {
   valor: number
   dtDoacao: string
   formaPgto: string
+  observacoes?: string
 }
 
 // ─── Material ────────────────────────────────────────────────────────────────
 export interface Material {
+  id: number
   idMaterial: number
   nome: string
   descricao?: string
   quantidade: number
+  quantidadeMinima: number
   unidade?: string
+  validade?: string
 }
 
 // ─── Predição IA ─────────────────────────────────────────────────────────────

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
-import Badge from '../../components/Badge'
 import { formatCurrency } from '../../utils/formatters'
 
 interface ReportRow { label: string; value: string | number; sub?: string }

@@ -29,8 +29,8 @@ export default function Consultas() {
   const { valores, erros, onChange, reset, validar } = useFormState(INICIAL)
 
   const filtered = consultas.filter(c => {
-    const matchSearch = c.nomePaciente.toLowerCase().includes(search.toLowerCase()) ||
-      c.nomeDentista.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = (c.nomePaciente ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.nomeDentista ?? '').toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus ? c.status === filterStatus : true
     return matchSearch && matchStatus
   })

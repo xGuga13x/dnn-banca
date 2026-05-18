@@ -14,7 +14,7 @@ const mock: Material[] = [
   { id: 4, idMaterial: 4, nome: 'Fio dental',        descricao: 'Rolo 50m',       quantidade: 45, quantidadeMinima: 20, unidade: 'rl', validade: '2027-01-15' },
   { id: 5, idMaterial: 5, nome: 'Máscara cirúrgica', descricao: 'Caixa c/ 50un',  quantidade: 12, quantidadeMinima: 10, unidade: 'cx', validade: '2026-03-01' },
 ]
-type FormData = Omit<Material, 'id' | 'idMaterial'>
+type FormData = { nome: string; descricao?: string; quantidade: number; quantidadeMinima: number; unidade?: string; validade?: string }
 
 export default function Materiais() {
   useEffect(() => { document.title = 'Materiais | De Novo Não! ERP' }, [])
@@ -27,11 +27,19 @@ export default function Materiais() {
   const estoqueBaixo = lista.filter(m => m.quantidade < m.quantidadeMinima).length
   const filtered     = lista.filter(m => m.nome.toLowerCase().includes(search.toLowerCase()))
   const openNew      = () => { setEditing(null); reset(); setModalOpen(true) }
-  const openEdit     = (m: Material) => { setEditing(m); reset({ nome: m.nome, descricao: m.descricao, quantidade: m.quantidade, quantidadeMinima: m.quantidadeMinima, unidade: m.unidade, validade: m.validade }); setModalOpen(true) }
+  const openEdit     = (m: Material) => {
+    setEditing(m)
+    reset({ nome: m.nome, descricao: m.descricao, quantidade: m.quantidade, quantidadeMinima: m.quantidadeMinima, unidade: m.unidade, validade: m.validade })
+    setModalOpen(true)
+  }
   const handleDelete = (id: number) => { if (!confirm('Remover?')) return; setLista(prev => prev.filter(m => m.id !== id)) }
   const onSubmit     = (data: FormData) => {
-    if (editing) setLista(prev => prev.map(m => m.id === editing.id ? { ...m, ...data } : m))
-    else setLista(prev => [...prev, { ...data, id: Date.now(), idMaterial: Date.now() }])
+    if (editing) {
+      setLista(prev => prev.map(m => m.id === editing.id ? { ...m, ...data } : m))
+    } else {
+      const newId = Date.now()
+      setLista(prev => [...prev, { ...data, id: newId, idMaterial: newId }])
+    }
     setModalOpen(false)
   }
 

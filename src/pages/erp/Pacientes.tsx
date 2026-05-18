@@ -71,10 +71,11 @@ export default function Pacientes() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!validar({ nome: 'Nome obrigatório', cpf: 'CPF obrigatório', telefone: 'Telefone obrigatório', dataNascimento: 'Data obrigatória' })) return
+    const dados = { ...valores, programa: valores.programa as 'DENTISTAS_DO_BEM' | 'APOLONICAS_DO_BEM' }
     if (editing) {
-      setPacientes(prev => prev.map(p => p.id === editing.id ? { ...p, ...valores } : p))
+      setPacientes(prev => prev.map(p => p.id === editing.id ? { ...p, ...dados } : p))
     } else {
-      setPacientes(prev => [...prev, { ...valores, id: Date.now(), idPaciente: Date.now(), ativo: true }])
+      setPacientes(prev => [...prev, { ...dados, id: Date.now(), idPaciente: Date.now(), ativo: true }])
     }
     setModalOpen(false)
   }

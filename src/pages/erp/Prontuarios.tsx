@@ -30,8 +30,8 @@ export default function Prontuarios() {
   const { valores, erros, onChange, reset, validar } = useFormState(INICIAL)
 
   const filtered = lista.filter(p =>
-    p.nomePaciente.toLowerCase().includes(search.toLowerCase()) ||
-    p.nomeDentista.toLowerCase().includes(search.toLowerCase())
+    (p.nomePaciente ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    (p.nomeDentista ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
   const openNew  = () => { setEditing(null); reset(); setModalOpen(true) }

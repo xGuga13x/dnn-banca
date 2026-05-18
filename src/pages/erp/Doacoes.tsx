@@ -8,9 +8,9 @@ import EmptyState from '../../components/EmptyState'
 import { formatCurrency } from '../../utils/formatters'
 
 const mock: Doacao[] = [
-  { id: 1, idDoacao: 1, idDoador: 1, nomeDoador: 'Roberto Souza',    nomeCampanha: 'Sorriso Solidário Maio', valor: 500,  formaPgto: 'PIX',      dtDoacao: '2025-05-10', observacoes: '' },
+  { id: 1, idDoacao: 1, idDoador: 1, nomeDoador: 'Roberto Souza',    nomeCampanha: 'Sorriso Solidário Maio', valor: 500,  formaPgto: 'PIX',          dtDoacao: '2025-05-10', observacoes: '' },
   { id: 2, idDoacao: 2, idDoador: 2, nomeDoador: 'Empresa XYZ Ltda', nomeCampanha: 'Sorriso Solidário Maio', valor: 2000, formaPgto: 'TRANSFERENCIA', dtDoacao: '2025-05-08', observacoes: 'Doação corporativa' },
-  { id: 3, idDoacao: 3, idDoador: 3, nomeDoador: 'Anônimo',          nomeCampanha: 'Dia das Mães TDB',       valor: 100,  formaPgto: 'PIX',      dtDoacao: '2025-05-11', observacoes: '' },
+  { id: 3, idDoacao: 3, idDoador: 3, nomeDoador: 'Anônimo',          nomeCampanha: 'Dia das Mães TDB',       valor: 100,  formaPgto: 'PIX',          dtDoacao: '2025-05-11', observacoes: '' },
 ]
 
 const FORMAS = ['PIX', 'BOLETO', 'CARTAO', 'TRANSFERENCIA', 'DINHEIRO']
@@ -38,8 +38,9 @@ export default function Doacoes() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!validar({ valor: 'Valor obrigatório', dtDoacao: 'Data obrigatória' })) return
+    const newId = Date.now()
     setLista(prev => [...prev, {
-      ...valores, id: Date.now(), idDoacao: Date.now(), idDoador: Date.now(),
+      ...valores, id: newId, idDoacao: newId, idDoador: newId,
       nomeDoador: valores.nomeDoador || 'Anônimo',
     }])
     reset()

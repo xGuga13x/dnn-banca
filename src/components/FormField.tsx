@@ -3,11 +3,12 @@ interface FormFieldProps {
   error?: string
   required?: boolean
   children: React.ReactNode
+  className?: string
 }
 
-export function FormField({ label, error, required, children }: FormFieldProps) {
+export function FormField({ label, error, required, children, className }: FormFieldProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className={`flex flex-col gap-1 ${className ?? ''}`}>
       <label className="text-sm font-semibold text-gray-700 font-body">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
