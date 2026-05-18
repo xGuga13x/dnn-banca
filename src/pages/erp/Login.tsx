@@ -2,10 +2,18 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
-const BASE_URL = 'http://localhost:8080/api'
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
 const GREEN = '#7ab800'
 const DARK  = '#2d4a1e'
 const ORANGE = '#f5821f'
+
+// Usuarios locais — fallback quando Java nao esta acessivel (Vercel sem backend)
+const USUARIOS_LOCAIS = [
+  { idUsuario: 1, nome: 'Administrador',   login: 'admin',      senha: 'admin123', perfil: 'ADMIN'      as const },
+  { idUsuario: 2, nome: 'Dr. Joao Silva',  login: 'dentista',   senha: 'dent123',  perfil: 'DENTISTA'   as const },
+  { idUsuario: 3, nome: 'Ana Gestora',     login: 'gestor',     senha: 'gest123',  perfil: 'GESTOR'     as const },
+  { idUsuario: 4, nome: 'Carlos Volunt.',  login: 'voluntario', senha: 'vol123',   perfil: 'VOLUNTARIO' as const },
+]
 
 export default function Login() {
   const { login, usuario } = useAuth()
@@ -53,41 +61,64 @@ export default function Login() {
     setErro('')
 
     try {
-      const resp = await fetch(`${BASE_URL}/usuarios/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ login: loginVal.trim(), senha }),
-      })
-
-      const data = await resp.json()
-
-      if (!resp.ok) {
-        const novasTentativas = tentativas + 1
-        setTentativas(novasTentativas)
-        if (novasTentativas >= 3) {
-          setBloqueado(true)
-          setCountdown(30)
-          setErro('Muitas tentativas. Aguarde 30 segundos.')
+      // Tenta autenticar via Java (quando disponivel — ex: rodando local na FIAP)
+      let autenticado = false
+      try {
+        const resp = await fetch(`${BASE_URL}/usuarios/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ login: loginVal.trim(), senha }),
+          signal: AbortSignal.timeout(4000),
+        })
+        if (resp.ok) {
+          const data = await resp.json()
+          if (lembrar) localStorage.setItem('dnn_login_salvo', loginVal.trim())
+          else         localStorage.removeItem('dnn_login_salvo')
+          login({ idUsuario: data.idUsuario, nome: data.nome, login: data.login, perfil: data.perfil })
+          navigate('/erp', { replace: true })
+          autenticado = true
         } else {
-          setErro(`Login ou senha inválidos. ${3 - novasTentativas} tentativa(s) restante(s).`)
+          const novasTentativas = tentativas + 1
+          setTentativas(novasTentativas)
+          if (novasTentativas >= 3) {
+            setBloqueado(true); setCountdown(30)
+            setErro('Muitas tentativas. Aguarde 30 segundos.')
+          } else {
+            setErro(`Login ou senha inválidos. ${3 - novasTentativas} tentativa(s) restante(s).`)
+          }
+          autenticado = true
         }
-        return
+      } catch {
+        // Java indisponivel — usa fallback local
       }
 
-      if (lembrar) localStorage.setItem('dnn_login_salvo', loginVal.trim())
-      else         localStorage.removeItem('dnn_login_salvo')
-
-      login({ idUsuario: data.idUsuario, nome: data.nome, login: data.login, perfil: data.perfil })
-      navigate('/erp', { replace: true })
+      if (!autenticado) {
+        // Fallback: verifica usuarios locais (demo / banca)
+        const u = USUARIOS_LOCAIS.find(
+          u => u.login === loginVal.trim() && u.senha === senha
+        )
+        if (u) {
+          if (lembrar) localStorage.setItem('dnn_login_salvo', loginVal.trim())
+          else         localStorage.removeItem('dnn_login_salvo')
+          login({ idUsuario: u.idUsuario, nome: u.nome, login: u.login, perfil: u.perfil })
+          navigate('/erp', { replace: true })
+        } else {
+          const novasTentativas = tentativas + 1
+          setTentativas(novasTentativas)
+          if (novasTentativas >= 3) {
+            setBloqueado(true); setCountdown(30)
+            setErro('Muitas tentativas. Aguarde 30 segundos.')
+          } else {
+            setErro(`Login ou senha inválidos. ${3 - novasTentativas} tentativa(s) restante(s).`)
+          }
+        }
+      }
 
     } catch {
-      setErro('Não foi possível conectar ao servidor. Verifique se a API Java está rodando.')
+      setErro('Erro inesperado. Tente novamente.')
     } finally {
       setLoading(false)
-    }
-  }
-
-  return (
+    }turn (
     <div className="min-h-screen flex" style={{ backgroundColor: '#f4f9ec' }}>
 
       {/* Painel esquerdo — visual */}
