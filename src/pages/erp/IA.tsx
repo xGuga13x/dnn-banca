@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useEffect, useState } from 'react'
 import { IAService } from '../../services/api'
 import type { PrevisaoFalta, PrevisaoArrecadacao } from '../../types'
-import { FormField, inputClass } from '../../components/FormField'
 import Button from '../../components/Button'
 import Card from '../../components/Card'
 import { riscoColor, formatCurrency } from '../../utils/formatters'
@@ -90,7 +89,7 @@ export default function IA() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display font-extrabold text-tdb-teal text-3xl">Inteligência Artificial</h1>
-          <p className="text-gray-400 font-body text-sm">Modelos preditivos integrados via Python / FastAPI</p>
+          <p className="text-gray-400 font-body text-sm">Modelos preditivos de Machine Learning via Python + Flask</p>
         </div>
         <div className="flex items-center gap-2 text-sm font-body">
           <span className={`w-2.5 h-2.5 rounded-full ${apiOnline === true ? 'bg-green-500' : apiOnline === false ? 'bg-red-500' : 'bg-yellow-400 animate-pulse-slow'}`} />
@@ -100,15 +99,6 @@ export default function IA() {
         </div>
       </div>
 
-      {/* Info banner */}
-      <div className="bg-tdb-teal/5 border border-tdb-teal/10 rounded-2xl p-5 font-body text-sm text-tdb-teal">
-        <strong className="font-display">Como funciona:</strong> Os modelos abaixo consomem os endpoints{' '}
-        <code className="bg-tdb-teal/10 px-1.5 py-0.5 rounded text-xs">/predict/falta</code> e{' '}
-        <code className="bg-tdb-teal/10 px-1.5 py-0.5 rounded text-xs">/predict/arrecadacao</code>{' '}
-        da API Python. Configure a URL em <code className="bg-tdb-teal/10 px-1.5 py-0.5 rounded text-xs">VITE_IA_URL</code> no arquivo <code className="bg-tdb-teal/10 px-1.5 py-0.5 rounded text-xs">.env</code>.
-        Quando offline, um fallback local simula o resultado.
-      </div>
-
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
         {/* ── Previsão de Falta ─────────────────────────────────────────────── */}
@@ -116,25 +106,11 @@ export default function IA() {
           <h2 className="font-display font-bold text-tdb-teal text-xl mb-5">🦷 Previsão de Falta em Consulta</h2>
           <form onSubmit={handlePreverFalta} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Distância (km)">
-                <input type="number" step="0.1" min="0" {...faltaForm.register('distanciaKm', { valueAsNumber: true })} className={inputClass} />
-              </FormField>
-              <FormField label="Faltas anteriores">
-                <input type="number" min="0" {...faltaForm.register('faltasAnteriores', { valueAsNumber: true })} className={inputClass} />
-              </FormField>
-              <FormField label="Dias até a consulta">
-                <input type="number" min="0" {...faltaForm.register('diasAteConsulta', { valueAsNumber: true })} className={inputClass} />
-              </FormField>
-              <FormField label="Renda familiar (R$)">
-                <input type="number" min="0" {...faltaForm.register('rendaFamiliar', { valueAsNumber: true })} className={inputClass} />
-              </FormField>
-              <FormField label="Turno">
-                <select {...faltaForm.register('turno', { valueAsNumber: true })} className={inputClass}>
-                  <option value={0}>Manhã</option>
-                  <option value={1}>Tarde</option>
-                  <option value={2}>Noite</option>
-                </select>
-              </FormField>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Distância (km)</label><input type="number" step="0.1" min="0" value={faltaForm.distanciaKm} onChange={e=>setFaltaForm(p=>({...p,distanciaKm:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" /></div>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Faltas anteriores</label><input type="number" min="0" value={faltaForm.faltasAnteriores} onChange={e=>setFaltaForm(p=>({...p,faltasAnteriores:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" /></div>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Dias até a consulta</label><input type="number" min="0" value={faltaForm.diasAteConsulta} onChange={e=>setFaltaForm(p=>({...p,diasAteConsulta:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" /></div>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Renda familiar (R$)</label><input type="number" min="0" value={faltaForm.rendaFamiliar} onChange={e=>setFaltaForm(p=>({...p,rendaFamiliar:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" /></div>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Turno</label><select value={faltaForm.turno} onChange={e=>setFaltaForm(p=>({...p,turno:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none"><option value={0}>Manhã</option><option value={1}>Tarde</option><option value={2}>Noite</option></select></div>
             </div>
             <Button type="submit" disabled={loadingFalta} className="w-full">
               {loadingFalta ? 'Calculando...' : 'Prever risco de falta'}
@@ -172,18 +148,10 @@ export default function IA() {
           <h2 className="font-display font-bold text-tdb-teal text-xl mb-5">📣 Previsão de Arrecadação</h2>
           <form onSubmit={handlePreverArrecadacao} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="Duração (dias)">
-                <input type="number" min="1" {...arrecForm.register('duracaoDias', { valueAsNumber: true })} className={inputClass} />
-              </FormField>
-              <FormField label="Meta (R$)">
-                <input type="number" min="0" {...arrecForm.register('metaValor', { valueAsNumber: true })} className={inputClass} />
-              </FormField>
-              <FormField label="Campanhas anteriores">
-                <input type="number" min="0" {...arrecForm.register('campanhasAnteriores', { valueAsNumber: true })} className={inputClass} />
-              </FormField>
-              <FormField label="Mês do ano (1-12)">
-                <input type="number" min="1" max="12" {...arrecForm.register('mesDoAno', { valueAsNumber: true })} className={inputClass} />
-              </FormField>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Duração (dias)</label><input type="number" min="1" value={arrecForm.duracaoDias} onChange={e=>setArrecForm(p=>({...p,duracaoDias:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" /></div>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Meta (R$)</label><input type="number" min="0" value={arrecForm.metaValor} onChange={e=>setArrecForm(p=>({...p,metaValor:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" /></div>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Campanhas anteriores</label><input type="number" min="0" value={arrecForm.campanhasAnteriores} onChange={e=>setArrecForm(p=>({...p,campanhasAnteriores:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" /></div>
+              <div><label className="text-xs text-gray-500 font-body block mb-1">Mês do ano (1-12)</label><input type="number" min="1" max="12" value={arrecForm.mesDoAno} onChange={e=>setArrecForm(p=>({...p,mesDoAno:+e.target.value}))} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" /></div>
             </div>
             <Button type="submit" disabled={loadingArrec} className="w-full">
               {loadingArrec ? 'Calculando...' : 'Prever arrecadação'}
@@ -214,17 +182,6 @@ export default function IA() {
         </Card>
 
       </div>
-
-      {/* Dica de integração */}
-      <Card className="border-dashed border-2 border-tdb-green/30 bg-tdb-green/5">
-        <h3 className="font-display font-bold text-tdb-teal text-lg mb-2">🔗 Como integrar a IA</h3>
-        <div className="font-body text-sm text-gray-600 space-y-2">
-          <p>1. Implemente o servidor Python com <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">fastapi</code> e <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">joblib</code></p>
-          <p>2. Exponha os endpoints <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">/predict/falta</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">/predict/arrecadacao</code> e <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">/health</code></p>
-          <p>3. Adicione <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">VITE_IA_URL=https://sua-api-python.com</code> no <code className="bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">.env</code></p>
-          <p>4. O front já está pronto para consumir — nenhuma alteração necessária ✅</p>
-        </div>
-      </Card>
     </div>
   )
 }

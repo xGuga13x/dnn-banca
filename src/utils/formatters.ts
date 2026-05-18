@@ -18,10 +18,10 @@ export const statusLabel: Record<string, string> = {
 }
 
 export const statusColor: Record<string, string> = {
-  AGENDADA:  'bg-blue-100 text-blue-700',
+  AGENDADA:  'bg-yellow-100 text-yellow-700',
   REALIZADA: 'bg-green-100 text-green-700',
-  CANCELADA: 'bg-red-100 text-red-700',
-  FALTA:     'bg-yellow-100 text-yellow-700',
+  CANCELADA: 'bg-gray-100 text-gray-500',
+  FALTA:     'bg-red-100 text-red-600',
 }
 
 export const riscoColor: Record<string, string> = {

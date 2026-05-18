@@ -26,7 +26,7 @@ export default function Header() {
             src="/image/logo-dnn.png"
             alt="Logo De Novo Não!"
             className="h-14 w-auto"
-            style={{ mixBlendMode: 'multiply' }}
+            
           />
         </NavLink>
 
@@ -46,7 +46,7 @@ export default function Header() {
             </NavLink>
           ))}
           <NavLink
-            to="/erp"
+            to="/erp/login"
             className="ml-3 text-sm px-5 py-2 rounded-full font-semibold text-white hover:opacity-90 transition-opacity font-body"
             style={{ backgroundColor: '#f5821f' }}
           >
@@ -83,7 +83,7 @@ export default function Header() {
             </NavLink>
           ))}
           <NavLink
-            to="/erp"
+            to="/erp/login"
             onClick={() => setOpen(false)}
             className="mt-2 text-sm text-center py-2 rounded-full font-semibold text-white font-body"
             style={{ backgroundColor: '#f5821f' }}

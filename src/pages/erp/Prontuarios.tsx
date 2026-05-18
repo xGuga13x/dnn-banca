@@ -1,224 +1,148 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
 import type { Prontuario } from '../../types'
+import { useFormState } from '../../hooks/useFormState'
 import Button from '../../components/Button'
 import Modal from '../../components/Modal'
 import { FormField, inputClass } from '../../components/FormField'
 import EmptyState from '../../components/EmptyState'
-import { formatDate } from '../../utils/formatters'
-import { gerarDescricaoClinica } from '../../services/gemini'
+import { IAService } from '../../services/api'
+import type { PrevisaoFalta } from '../../types'
+import { riscoColor } from '../../utils/formatters'
 
-interface ProntuarioComPaciente extends Prontuario {
-  nomePaciente: string
-  nomeDentista: string
-}
-
-const mockProntuarios: ProntuarioComPaciente[] = [
-  { idProntuario: 1, idConsulta: 1, descricao: 'Limpeza completa realizada. Paciente orientado sobre higiene bucal. Próxima consulta em 6 meses.', dtRegistro: '2025-04-18', nomePaciente: 'Maria Oliveira', nomeDentista: 'Dr. João Silva' },
-  { idProntuario: 2, idConsulta: 4, descricao: 'Extração do dente 38 sem intercorrências. Prescrito analgésico e antibiótico por 7 dias.', dtRegistro: '2025-04-10', nomePaciente: 'Maria Oliveira', nomeDentista: 'Dra. Ana Costa' },
-  { idProntuario: 3, idConsulta: 2, descricao: 'Avaliação inicial. Identificada necessidade de aparelho ortodôntico. Encaminhado para consulta especializada.', dtRegistro: '2025-04-18', nomePaciente: 'Pedro Santos', nomeDentista: 'Dra. Ana Costa' },
+const mock: Prontuario[] = [
+  { id: 1, idProntuario: 1, idConsulta: 1, nomePaciente: 'Maria Oliveira', nomeDentista: 'Dr. João Silva',  dtRegistro: '2025-04-18', descricao: 'Limpeza e remoção de tártaro realizada com sucesso.', observacoes: 'Retornar em 6 meses.' },
+  { id: 2, idProntuario: 2, idConsulta: 4, nomePaciente: 'Maria Oliveira', nomeDentista: 'Dra. Ana Costa',  dtRegistro: '2025-04-10', descricao: 'Extração do dente 38 sem complicações.',                 observacoes: 'Prescrição de antibiótico.' },
+  { id: 3, idProntuario: 3, idConsulta: 5, nomePaciente: 'Pedro Santos',   nomeDentista: 'Dr. Carlos Lima', dtRegistro: '2025-03-22', descricao: 'Restauração com resina composta no dente 16.',            observacoes: '' },
 ]
 
-type FormData = Omit<Prontuario, 'idProntuario' | 'dtRegistro'> & {
-  nomePaciente: string
-  nomeDentista: string
-}
+const INICIAL = { idConsulta: 0, nomePaciente: '', nomeDentista: '', descricao: '', observacoes: '' }
 
 export default function Prontuarios() {
   useEffect(() => { document.title = 'Prontuários | De Novo Não! ERP' }, [])
 
-  const [prontuarios, setProntuarios] = useState<ProntuarioComPaciente[]>(mockProntuarios)
-  const [search, setSearch]           = useState('')
-  const [selected, setSelected]       = useState<ProntuarioComPaciente | null>(null)
-  const [modalOpen, setModalOpen]     = useState(false)
-  const [detailOpen, setDetailOpen]   = useState(false)
+  const [lista,         setLista]         = useState<Prontuario[]>(mock)
+  const [search,        setSearch]        = useState('')
+  const [modalOpen,     setModalOpen]     = useState(false)
+  const [editing,       setEditing]       = useState<Prontuario | null>(null)
+  const [previsaoFalta, setPrevisaoFalta] = useState<PrevisaoFalta | null>(null)
+  const [loadingIA,     setLoadingIA]     = useState(false)
+  const [erroIA,        setErroIA]        = useState<string | null>(null)
+  const { valores, erros, onChange, reset, validar } = useFormState(INICIAL)
 
-  // Gemini
-  const [anotacoes, setAnotacoes]         = useState('')
-  const [loadingIA, setLoadingIA]         = useState(false)
-  const [sugestao, setSugestao]           = useState('')
-  const [erroIA, setErroIA]               = useState('')
-
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormData>()
-
-  const filtered = prontuarios.filter(p =>
+  const filtered = lista.filter(p =>
     p.nomePaciente.toLowerCase().includes(search.toLowerCase()) ||
     p.nomeDentista.toLowerCase().includes(search.toLowerCase())
   )
 
-  const openNew = () => {
-    reset({ idConsulta: 0, nomePaciente: '', nomeDentista: '', descricao: '' })
-    setSugestao('')
-    setAnotacoes('')
-    setErroIA('')
+  const openNew  = () => { setEditing(null); reset(); setModalOpen(true) }
+  const openEdit = (p: Prontuario) => {
+    setEditing(p)
+    reset({ idConsulta: p.idConsulta, nomePaciente: p.nomePaciente,
+            nomeDentista: p.nomeDentista, descricao: p.descricao, observacoes: p.observacoes ?? '' })
     setModalOpen(true)
   }
+  const handleDelete = (id: number) => {
+    if (!confirm('Excluir este prontuário?')) return
+    setLista(prev => prev.filter(p => p.id !== id))
+  }
 
-  const openDetail = (p: ProntuarioComPaciente) => { setSelected(p); setDetailOpen(true) }
-
-  const onSubmit = (data: FormData) => {
-    setProntuarios(prev => [...prev, {
-      ...data,
-      idProntuario: Date.now(),
-      dtRegistro: new Date().toISOString().split('T')[0],
-    }])
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!validar({ nomePaciente: 'Obrigatório', nomeDentista: 'Obrigatório', descricao: 'Obrigatório' })) return
+    if (editing) {
+      setLista(prev => prev.map(p => p.id === editing.id ? { ...p, ...valores } : p))
+    } else {
+      setLista(prev => [...prev, { ...valores, id: Date.now(), idProntuario: Date.now(), dtRegistro: new Date().toISOString().split('T')[0] }])
+    }
     setModalOpen(false)
   }
 
-  const handleGerarIA = async () => {
-    if (!anotacoes.trim()) return
-    setLoadingIA(true)
-    setErroIA('')
-    setSugestao('')
+  const preverRisco = async () => {
+    setLoadingIA(true); setErroIA(null)
     try {
-      const texto = await gerarDescricaoClinica(anotacoes)
-      setSugestao(texto)
-    } catch (e: unknown) {
-      setErroIA(e instanceof Error ? e.message : 'Erro ao conectar ao Gemini')
-    } finally {
-      setLoadingIA(false)
-    }
-  }
-
-  const usarSugestao = () => {
-    setValue('descricao', sugestao)
-    setSugestao('')
-    setAnotacoes('')
+      const res = await IAService.preverFalta({ distanciaKm: 10, faltasAnteriores: 1, diasAteConsulta: 5, rendaFamiliar: 1200, turno: 0 })
+      setPrevisaoFalta(res as PrevisaoFalta)
+    } catch {
+      setPrevisaoFalta({ probabilidadeFalta: 0.42, risco: 'MEDIO', recomendacao: 'Enviar lembrete padrão' })
+      setErroIA('API Python offline — resultado simulado.')
+    } finally { setLoadingIA(false) }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-display font-extrabold text-3xl" style={{ color: '#2d4a1e' }}>Prontuários</h1>
-          <p className="text-gray-400 font-body text-sm">{prontuarios.length} registros clínicos</p>
+          <p className="text-gray-400 font-body text-sm">{lista.length} prontuários registrados</p>
         </div>
-        <Button onClick={openNew}>+ Novo Registro</Button>
+        <Button onClick={openNew}>+ Novo Prontuário</Button>
       </div>
 
-      <input type="text" placeholder="Buscar por paciente ou dentista..."
-        value={search} onChange={e => setSearch(e.target.value)}
-        className={inputClass + ' max-w-sm'} />
+      <input type="text" placeholder="Buscar por paciente ou dentista..." value={search}
+        onChange={e => setSearch(e.target.value)} className={inputClass + ' max-w-sm'} />
 
-      {filtered.length === 0
-        ? <EmptyState icon="📋" title="Nenhum prontuário encontrado" />
-        : (
-          <div className="space-y-3">
-            {filtered.map(p => (
-              <div key={p.idProntuario} onClick={() => openDetail(p)}
-                className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <p className="font-display font-bold" style={{ color: '#2d4a1e' }}>{p.nomePaciente}</p>
-                    <p className="text-gray-400 text-xs font-body">
-                      {p.nomeDentista} · {formatDate(p.dtRegistro)} · Consulta #{p.idConsulta}
-                    </p>
-                  </div>
-                  <span className="text-sm font-body font-medium shrink-0" style={{ color: '#7ab800' }}>
-                    Ver detalhes →
-                  </span>
+      {filtered.length === 0 ? <EmptyState icon="📋" title="Nenhum prontuário encontrado" /> : (
+        <div className="space-y-4">
+          {filtered.map(p => (
+            <div key={p.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+                <div>
+                  <p className="font-display font-bold text-base" style={{ color: '#2d4a1e' }}>{p.nomePaciente}</p>
+                  <p className="text-sm text-gray-400 font-body">{p.nomeDentista} · {p.dtRegistro}</p>
                 </div>
-                <p className="text-gray-600 text-sm font-body mt-3 line-clamp-2">{p.descricao}</p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => openEdit(p)}>Editar</Button>
+                  <Button size="sm" variant="danger" onClick={() => handleDelete(p.id)}>Excluir</Button>
+                </div>
               </div>
-            ))}
-          </div>
-        )
-      }
+              <p className="text-gray-700 text-sm font-body leading-relaxed">{p.descricao}</p>
+              {p.observacoes && <p className="text-gray-400 text-xs font-body mt-2">Obs: {p.observacoes}</p>}
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Modal detalhe */}
-      <Modal isOpen={detailOpen} title="Prontuário Clínico" onClose={() => setDetailOpen(false)} size="md">
-        {selected && (
-          <div className="space-y-4 font-body">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {[
-                { label: 'Paciente', value: selected.nomePaciente },
-                { label: 'Dentista', value: selected.nomeDentista },
-                { label: 'Data',     value: formatDate(selected.dtRegistro) },
-                { label: 'Consulta', value: `#${selected.idConsulta}` },
-              ].map(row => (
-                <div key={row.label}>
-                  <p className="text-gray-400 text-xs uppercase tracking-wide">{row.label}</p>
-                  <p className="font-semibold" style={{ color: '#2d4a1e' }}>{row.value}</p>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-xl p-4" style={{ backgroundColor: '#f4f9ec' }}>
-              <p className="text-gray-400 text-xs uppercase tracking-wide mb-2">Descrição clínica</p>
-              <p className="text-gray-700 text-sm leading-relaxed">{selected.descricao}</p>
-            </div>
-            <div className="flex justify-end">
-              <Button variant="ghost" onClick={() => setDetailOpen(false)}>Fechar</Button>
+      {/* Previsão de risco de falta */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display font-bold text-lg" style={{ color: '#2d4a1e' }}>Risco de Falta — IA</h2>
+          <Button size="sm" onClick={preverRisco} disabled={loadingIA}>
+            {loadingIA ? 'Calculando...' : 'Verificar Risco'}
+          </Button>
+        </div>
+        {previsaoFalta && (
+          <div className="flex items-center gap-6">
+            <span className={`font-display font-extrabold text-4xl ${riscoColor[previsaoFalta.risco]}`}>
+              {(previsaoFalta.probabilidadeFalta * 100).toFixed(0)}%
+            </span>
+            <div>
+              <p className="font-body text-sm text-gray-500">Risco: <strong className={riscoColor[previsaoFalta.risco]}>{previsaoFalta.risco}</strong></p>
+              <p className="font-body text-sm text-gray-500">{previsaoFalta.recomendacao}</p>
             </div>
           </div>
         )}
-      </Modal>
+        {erroIA && <p className="text-xs text-yellow-600 font-body mt-2">{erroIA}</p>}
+      </div>
 
-      {/* Modal novo registro */}
-      <Modal isOpen={modalOpen} title="Novo Registro de Prontuário" onClose={() => setModalOpen(false)} size="md">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-
+      <Modal open={modalOpen} title={editing ? 'Editar Prontuário' : 'Novo Prontuário'} onClose={() => setModalOpen(false)} size="lg">
+        <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField label="ID da Consulta" error={errors.idConsulta?.message} required>
-              <input type="number" className={inputClass} placeholder="Ex: 1"
-                {...register('idConsulta', { required: 'Obrigatório', valueAsNumber: true })} />
+            <FormField label="Paciente" error={erros.nomePaciente} required>
+              <input type="text" value={valores.nomePaciente} onChange={onChange('nomePaciente')} className={inputClass} />
             </FormField>
-            <FormField label="Nome do Paciente" error={errors.nomePaciente?.message} required>
-              <input className={inputClass} placeholder="Nome do paciente"
-                {...register('nomePaciente', { required: 'Obrigatório' })} />
-            </FormField>
-            <FormField label="Nome do Dentista" error={errors.nomeDentista?.message} required>
-              <input className={inputClass} placeholder="Nome do dentista"
-                {...register('nomeDentista', { required: 'Obrigatório' })} />
+            <FormField label="Dentista" error={erros.nomeDentista} required>
+              <input type="text" value={valores.nomeDentista} onChange={onChange('nomeDentista')} className={inputClass} />
             </FormField>
           </div>
-
-          {/* Assistente Gemini */}
-          <div className="rounded-xl border-2 border-dashed p-4 space-y-3"
-            style={{ borderColor: '#7ab800', backgroundColor: '#f4f9ec' }}>
-            <div className="flex items-center gap-2">
-              <span className="text-base">✨</span>
-              <p className="text-sm font-semibold" style={{ color: '#2d4a1e' }}>
-                Assistente de IA — Gerador de descrição clínica
-              </p>
-            </div>
-            <p className="text-xs text-gray-500 font-body">
-              Descreva em palavras simples o que foi feito. O Gemini transforma em texto clínico profissional.
-            </p>
-            <textarea rows={2} className={inputClass + ' resize-none text-sm'}
-              placeholder="Ex: fiz limpeza, tinha tártaro, orientei escovar melhor..."
-              value={anotacoes}
-              onChange={e => setAnotacoes(e.target.value)} />
-            <button type="button" onClick={handleGerarIA}
-              disabled={loadingIA || !anotacoes.trim()}
-              className="text-xs px-4 py-1.5 rounded-full font-semibold disabled:opacity-50 transition-opacity hover:opacity-80 font-body"
-              style={{ backgroundColor: '#7ab800', color: 'white' }}>
-              {loadingIA ? 'Gerando...' : 'Gerar descrição clínica'}
-            </button>
-
-            {erroIA && <p className="text-xs text-red-500 font-body">{erroIA}</p>}
-
-            {sugestao && (
-              <div className="rounded-lg p-3 space-y-2" style={{ backgroundColor: 'white' }}>
-                <p className="text-xs font-semibold" style={{ color: '#7ab800' }}>Sugestão gerada:</p>
-                <p className="text-sm text-gray-700 leading-relaxed font-body">{sugestao}</p>
-                <button type="button" onClick={usarSugestao}
-                  className="text-xs font-semibold hover:underline font-body"
-                  style={{ color: '#2d4a1e' }}>
-                  Usar esta descrição →
-                </button>
-              </div>
-            )}
-          </div>
-
-          <FormField label="Descrição clínica" error={errors.descricao?.message} required>
-            <textarea rows={4} className={inputClass + ' resize-y'}
-              placeholder="Descreva os procedimentos realizados, observações e recomendações..."
-              {...register('descricao', { required: 'Descrição é obrigatória' })} />
+          <FormField label="Descrição do atendimento" error={erros.descricao} required>
+            <textarea rows={4} value={valores.descricao} onChange={onChange('descricao')} className={inputClass + ' resize-none'} placeholder="Descreva o procedimento realizado..." />
           </FormField>
-
-          <div className="flex justify-end gap-3 pt-2">
+          <FormField label="Observações / Prescrições">
+            <textarea rows={2} value={valores.observacoes} onChange={onChange('observacoes')} className={inputClass + ' resize-none'} placeholder="Medicamentos, retorno, cuidados..." />
+          </FormField>
+          <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button type="submit">Registrar</Button>
+            <Button type="submit">{editing ? 'Salvar' : 'Registrar'}</Button>
           </div>
         </form>
       </Modal>

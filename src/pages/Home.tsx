@@ -106,7 +106,7 @@ export default function Home() {
               a organizar o atendimento odontológico gratuito de jovens e mulheres em situação de vulnerabilidade social.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link to="/erp"
+              <Link to="/erp/login"
                 className="px-6 py-2.5 rounded-full font-semibold text-sm text-white hover:opacity-90 transition-opacity font-body"
                 style={{ backgroundColor: '#f5821f' }}>Acessar o ERP</Link>
               <Link to="/sobre"
@@ -183,11 +183,67 @@ export default function Home() {
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-gray-400 text-xs font-body uppercase tracking-wider mb-5">Tecnologias utilizadas</p>
           <div className="flex flex-wrap justify-center gap-3">
-            {['Java', 'Python', 'Oracle DB', 'React + TypeScript', 'Machine Learning', 'ViaCEP', 'IBGE', 'BrasilAPI'].map(tech => (
+            {['Java + Quarkus', 'Python + Flask', 'Oracle DB', 'React + TypeScript', 'scikit-learn', 'ViaCEP', 'IBGE', 'VLibras + UserWay'].map(tech => (
               <span key={tech} className="text-sm px-4 py-1.5 rounded-full border font-body"
                 style={{ borderColor: '#7ab800', color: '#2d4a1e' }}>{tech}</span>
             ))}
           </div>
+        </div>
+      </section>
+
+
+      {/* Seção de Doação Pública */}
+      <section className="py-16 px-6" style={{ backgroundColor: '#fff' }}>
+        <div className="max-w-4xl mx-auto text-center">
+          <span className="inline-block text-xs font-semibold px-3 py-1 rounded-full mb-4 font-body"
+            style={{ backgroundColor: '#f4f9ec', color: '#7ab800' }}>
+            Faça a diferença
+          </span>
+          <h2 className="font-display font-extrabold text-3xl mb-3" style={{ color: '#2d4a1e' }}>
+            Doe e transforme sorrisos
+          </h2>
+          <p className="text-gray-500 text-base leading-relaxed mb-10 font-body max-w-xl mx-auto">
+            Sua doação garante atendimento odontológico gratuito para jovens e mulheres
+            em situação de vulnerabilidade social. Cada contribuição faz a diferença.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            {[
+              { valor: 'R$ 25',  desc: 'Materiais de higiene para 1 paciente' },
+              { valor: 'R$ 50',  desc: 'Consulta de avaliação completa' },
+              { valor: 'R$ 100', desc: 'Tratamento odontológico completo' },
+            ].map(op => (
+              <div key={op.valor}
+                className="rounded-2xl p-6 border-2 cursor-pointer hover:shadow-md transition-all text-center"
+                style={{ borderColor: '#e2f0d0', backgroundColor: '#f4f9ec' }}>
+                <p className="font-display font-extrabold text-2xl mb-1" style={{ color: '#f5821f' }}>
+                  {op.valor}
+                </p>
+                <p className="text-gray-500 text-sm font-body">{op.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <Link
+              to="/doe"
+              className="px-8 py-3 rounded-full font-semibold text-sm text-white hover:opacity-90 transition-opacity font-body"
+              style={{ backgroundColor: '#f5821f' }}>
+              Quero Doar Agora
+            </Link>
+            <a
+              href="https://turmadobem.org.br"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-3 rounded-full font-semibold text-sm border hover:bg-gray-50 transition-colors font-body"
+              style={{ borderColor: '#7ab800', color: '#7ab800' }}>
+              Conhecer a ONG
+            </a>
+          </div>
+
+          <p className="text-gray-400 text-xs font-body mt-6">
+            Doações processadas com segurança pelo site oficial da Turma do Bem.
+          </p>
         </div>
       </section>
 
@@ -197,7 +253,7 @@ export default function Home() {
         <h2 className="font-display font-bold text-2xl mb-3">Quer conhecer o sistema?</h2>
         <p className="text-white/60 text-sm mb-6 font-body">Acesse o ERP ou saiba mais sobre como o projeto foi desenvolvido.</p>
         <div className="flex flex-wrap justify-center gap-3">
-          <Link to="/erp"
+          <Link to="/erp/login"
             className="px-6 py-2.5 rounded-full font-semibold text-sm font-body hover:opacity-90 transition-opacity"
             style={{ backgroundColor: '#f5821f', color: 'white' }}>Acessar o ERP</Link>
           <Link to="/sobre"

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Card from '../../components/Card'
 import Button from '../../components/Button'
+import Badge from '../../components/Badge'
 import { formatCurrency } from '../../utils/formatters'
 
 interface ReportRow { label: string; value: string | number; sub?: string }
@@ -24,10 +25,56 @@ const pacientesPorPrograma: ReportRow[] = [
 ]
 
 const materiaisEstoqueBaixo: ReportRow[] = [
-  { label: 'Luva cirúrgica',   value: '8 cx',  sub: 'mín. recomendado: 20'  },
-  { label: 'Anestésico local', value: '2 cx',  sub: 'mín. recomendado: 10'  },
-  { label: 'Escova de dente',  value: '3 un',  sub: 'mín. recomendado: 30'  },
+  { label: 'Luva cirúrgica',   value: '8 cx',  sub: 'mín: 20'  },
+  { label: 'Anestésico local', value: '2 cx',  sub: 'mín: 10'  },
+  { label: 'Escova de dente',  value: '3 un',  sub: 'mín: 30'  },
 ]
+
+// Exporta dados como CSV e faz download
+function exportCSV(nome: string, rows: ReportRow[]) {
+  const header = 'Item,Valor,Detalhe\n'
+  const body = rows.map(r => `"${r.label}","${r.value}","${r.sub ?? ''}"`).join('\n')
+  const blob = new Blob([header + body], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `${nome.replace(/\s+/g, '_')}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// Exporta todos os dados em um único CSV
+function exportTudo(period: string) {
+  const todas = [
+    ['Consultas por Status', ...consultasPorStatus.map(r => [r.label, r.value, r.sub ?? ''])],
+    ['', ['', '', '']],
+    ['Arrecadacao por Campanha', ...arrecadacaoPorCampanha.map(r => [r.label, r.value, r.sub ?? ''])],
+    ['', ['', '', '']],
+    ['Pacientes por Programa', ...pacientesPorPrograma.map(r => [r.label, r.value, r.sub ?? ''])],
+    ['', ['', '', '']],
+    ['Materiais Estoque Baixo', ...materiaisEstoqueBaixo.map(r => [r.label, r.value, r.sub ?? ''])],
+  ]
+  const linhas = [`Relatório Completo - ${period}`, 'Item,Valor,Detalhe']
+  todas.forEach(bloco => {
+    if (typeof bloco[0] === 'string' && bloco.length === 1) {
+      linhas.push(`\n"${bloco[0]}"`)
+    } else if (Array.isArray(bloco[0])) {
+      linhas.push('')
+    } else {
+      linhas.push(`"${bloco[0]}"`)
+      ;(bloco.slice(1) as any[]).forEach((r: any) => {
+        linhas.push(`"${r[0]}","${r[1]}","${r[2]}"`)
+      })
+    }
+  })
+  const blob = new Blob([linhas.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `Relatorio_Completo_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 function ReportTable({ rows }: { rows: ReportRow[] }) {
   return (
@@ -37,7 +84,7 @@ function ReportTable({ rows }: { rows: ReportRow[] }) {
           <tr key={row.label} className="hover:bg-gray-50 transition-colors">
             <td className="py-3 text-gray-700 font-medium">{row.label}</td>
             {row.sub && <td className="py-3 text-gray-400 text-xs">{row.sub}</td>}
-            <td className="py-3 text-right font-display font-bold text-tdb-teal">{row.value}</td>
+            <td className="py-3 text-right font-display font-bold" style={{ color: '#2d4a1e' }}>{row.value}</td>
           </tr>
         ))}
       </tbody>
@@ -48,79 +95,80 @@ function ReportTable({ rows }: { rows: ReportRow[] }) {
 export default function Relatorios() {
   useEffect(() => { document.title = 'Relatórios | De Novo Não! ERP' }, [])
 
-  const [period, setPeriod] = useState<'mes' | 'trimestre' | 'ano'>('mes')
-
-  const handleExport = (tipo: string) => {
-    alert(`Exportando relatório: ${tipo}\n\nNo Sprint 4, este botão consumirá a API Java para gerar o arquivo real.`)
-  }
+  const [period, setPeriod] = useState<'Mês' | 'Trimestre' | 'Ano'>('Mês')
 
   return (
     <div className="space-y-8 animate-fade-in">
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display font-extrabold text-tdb-teal text-3xl">Relatórios</h1>
+          <h1 className="font-display font-extrabold text-3xl" style={{ color: '#2d4a1e' }}>Relatórios</h1>
           <p className="text-gray-400 font-body text-sm">Análise consolidada dos dados do ERP</p>
         </div>
-        {/* Período */}
         <div className="flex gap-2">
-          {(['mes', 'trimestre', 'ano'] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-4 py-2 rounded-xl text-sm font-body font-medium transition-all
-                ${period === p ? 'bg-tdb-teal text-white' : 'bg-white border border-gray-200 text-gray-500 hover:border-tdb-green'}`}
-            >
-              {p === 'mes' ? 'Mês' : p === 'trimestre' ? 'Trimestre' : 'Ano'}
+          {(['Mês', 'Trimestre', 'Ano'] as const).map((p) => (
+            <button key={p} onClick={() => setPeriod(p)}
+              className="px-4 py-2 rounded-xl text-sm font-body font-medium transition-all"
+              style={{
+                backgroundColor: period === p ? '#2d4a1e' : 'white',
+                color:           period === p ? 'white'   : '#6b7280',
+                border:          period === p ? 'none'    : '1px solid #e5e7eb',
+              }}>
+              {p}
             </button>
           ))}
         </div>
       </div>
 
-      {/* KPIs resumo */}
+      {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Atendimentos', value: '134', icon: '🦷', color: 'text-tdb-teal'  },
-          { label: 'Arrecadado',         value: 'R$ 37.450', icon: '💰', color: 'text-tdb-green' },
-          { label: 'Novos Pacientes',    value: '28',  icon: '👤', color: 'text-blue-500'  },
-          { label: 'Taxa de Falta',      value: '12%', icon: '⚠️', color: 'text-yellow-500' },
+          { label: 'Total Atendimentos', value: '134',       cor: '#2d4a1e' },
+          { label: 'Arrecadado',         value: 'R$ 37.450', cor: '#7ab800' },
+          { label: 'Novos Pacientes',    value: '28',        cor: '#3b82f6' },
+          { label: 'Taxa de Falta',      value: '12%',       cor: '#ef4444' },
         ].map((k) => (
-          <div key={k.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center animate-fade-in-up">
-            <p className="text-3xl mb-1">{k.icon}</p>
-            <p className={`font-display font-extrabold text-2xl ${k.color}`}>{k.value}</p>
+          <div key={k.label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 text-center">
+            <p className="font-display font-extrabold text-2xl" style={{ color: k.cor }}>{k.value}</p>
             <p className="text-gray-400 text-xs font-body mt-1">{k.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Tabelas de relatórios */}
+      {/* Tabelas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-display font-bold text-tdb-teal text-lg">Consultas por Status</h2>
-            <button onClick={() => handleExport('Consultas por Status')} className="text-xs text-tdb-green hover:underline font-body">Exportar</button>
+            <h2 className="font-display font-bold text-lg" style={{ color: '#2d4a1e' }}>Consultas por Status</h2>
+            <Button size="sm" variant="ghost" onClick={() => exportCSV('Consultas_por_Status', consultasPorStatus)}>
+              Exportar
+            </Button>
           </div>
           <ReportTable rows={consultasPorStatus} />
         </Card>
 
         <Card>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-display font-bold text-tdb-teal text-lg">Arrecadação por Campanha</h2>
-            <button onClick={() => handleExport('Arrecadação')} className="text-xs text-tdb-green hover:underline font-body">Exportar</button>
+            <h2 className="font-display font-bold text-lg" style={{ color: '#2d4a1e' }}>Arrecadação por Campanha</h2>
+            <Button size="sm" variant="ghost" onClick={() => exportCSV('Arrecadacao_por_Campanha', arrecadacaoPorCampanha)}>
+              Exportar
+            </Button>
           </div>
           <ReportTable rows={arrecadacaoPorCampanha} />
         </Card>
 
         <Card>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-display font-bold text-tdb-teal text-lg">Pacientes por Programa</h2>
-            <button onClick={() => handleExport('Pacientes por Programa')} className="text-xs text-tdb-green hover:underline font-body">Exportar</button>
+            <h2 className="font-display font-bold text-lg" style={{ color: '#2d4a1e' }}>Pacientes por Programa</h2>
+            <Button size="sm" variant="ghost" onClick={() => exportCSV('Pacientes_por_Programa', pacientesPorPrograma)}>
+              Exportar
+            </Button>
           </div>
           <ReportTable rows={pacientesPorPrograma} />
-          {/* Barra visual */}
-          <div className="mt-4 flex rounded-xl overflow-hidden h-4">
-            <div className="bg-tdb-teal transition-all duration-700" style={{ width: '63%' }} title="Dentistas do Bem" />
-            <div className="bg-tdb-green transition-all duration-700" style={{ width: '37%' }} title="Apolônias do Bem" />
+          <div className="mt-4 flex rounded-xl overflow-hidden h-3">
+            <div style={{ width: '63%', backgroundColor: '#2d4a1e' }} />
+            <div style={{ width: '37%', backgroundColor: '#7ab800' }} />
           </div>
           <div className="flex justify-between text-xs font-body text-gray-400 mt-1">
             <span>Dentistas do Bem 63%</span>
@@ -130,26 +178,28 @@ export default function Relatorios() {
 
         <Card>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="font-display font-bold text-tdb-teal text-lg">⚠️ Materiais com Estoque Baixo</h2>
-            <button onClick={() => handleExport('Estoque Baixo')} className="text-xs text-tdb-green hover:underline font-body">Exportar</button>
+            <h2 className="font-display font-bold text-lg" style={{ color: '#2d4a1e' }}>Materiais com Estoque Baixo</h2>
+            <Button size="sm" variant="ghost" onClick={() => exportCSV('Estoque_Baixo', materiaisEstoqueBaixo)}>
+              Exportar
+            </Button>
           </div>
           <ReportTable rows={materiaisEstoqueBaixo} />
         </Card>
       </div>
 
       {/* Exportação completa */}
-      <Card className="border-dashed border-2 border-tdb-teal/20">
-        <h3 className="font-display font-bold text-tdb-teal text-lg mb-3">📥 Exportação Completa</h3>
-        <p className="text-gray-500 font-body text-sm mb-4">
-          No Sprint 4, estes botões consumirão a API Java para gerar arquivos reais em PDF ou Excel.
-          Atualmente simulam a ação.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={() => handleExport('PDF Completo')} variant="primary" size="sm">📄 Exportar PDF</Button>
-          <Button onClick={() => handleExport('Excel Completo')} variant="secondary" size="sm">📊 Exportar Excel</Button>
-          <Button onClick={() => handleExport('JSON')} variant="ghost" size="sm">🔗 Exportar JSON</Button>
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="font-display font-bold text-lg" style={{ color: '#2d4a1e' }}>Exportação Completa</h3>
+            <p className="text-gray-400 text-sm font-body">Baixa todos os relatórios em um único arquivo CSV</p>
+          </div>
+          <Button onClick={() => exportTudo(period)} variant="primary">
+            Exportar Relatório Completo
+          </Button>
         </div>
       </Card>
+
     </div>
   )
 }
